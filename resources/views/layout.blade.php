@@ -55,7 +55,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('videos.index') }}">HoTube</a>
+            <a class="navbar-brand" href="{{ route('videos.index') }}">HoCube</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -73,6 +73,14 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Contact</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <form action="{{ route('videos.clear') }}" method="post">
+                            @csrf
+                            <button type="submit" class="nav-link btn btn-danger text-light">Clear All</button>
+                        </form>
+
                     </li>
                     <li class="nav-item ">
                         <a href="{{ route('videos.create') }}" class="btn btn-success nav-link text-light ">Upload

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Resolution;
+use App\Models\Video;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use FFMpeg\Coordinate\Dimension;
+use Illuminate\Support\Facades\Storage;
 
 class GenerateResolutionsJob implements ShouldQueue
 {
@@ -41,20 +43,22 @@ class GenerateResolutionsJob implements ShouldQueue
      */
     public function handle()
     {
-        dd($this->storagePath);
-        $resolutions = [144, 360, 720];
+        $resolutions = ['426x240', '640x360', '854x480', '1280x720'];
+        $ffmpegPath = 'C:\ffmpeg\bin\ffmpeg'; // Path to the ffmpeg command-line tool
 
+        // Convert original video to WebM format
+
+        // Change resolution based on the converted WebM video
         foreach ($resolutions as $resolution) {
-            $outputFilename = $resolution . 'p_' . $this->filename;
+            $quality = explode('x', $resolution)[1];
+            $outputFilename = $quality . '_' . $this->filename;
+
+            $outputPath = $this->storagePath . '/' . $outputFilename;
 
             try {
-                $command = 'C:\ffmpeg\bin\ffmpeg -i ' . escapeshellarg($this->storagePath . '/' . $this->filename) .
-                    ' -vf "scale=' . $resolution . ':trunc(ow/a/2)*2" ' .
-                    escapeshellarg($this->storagePath . '/' . $outputFilename);
-
+                $command = $ffmpegPath . ' -i ' . $this->storagePath . '/' . $this->filename . ' -s ' . $resolution . ' ' . $outputPath;
                 shell_exec($command);
-
-                $this->saveResolution($resolution, $outputFilename);
+                $this->saveResolution($quality, $outputFilename);
             } catch (\Exception $e) {
                 $errorMessage = 'Error generating resolution: ' . $resolution . 'p. ' . $e->getMessage();
                 throw new \Exception($errorMessage);
@@ -62,11 +66,11 @@ class GenerateResolutionsJob implements ShouldQueue
         }
     }
 
-    private function saveResolution($resolution, $outputFilename)
+    private function saveResolution($quality, $outputFilename)
     {
         $resolutionModel = new Resolution();
         $resolutionModel->video_id = $this->videoId;
-        $resolutionModel->resolution = $resolution;
+        $resolutionModel->resolution = $quality;
         $resolutionModel->path = $outputFilename;
         $resolutionModel->save();
     }

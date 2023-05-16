@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\VideoController;
+use App\Models\Video;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
@@ -14,11 +15,18 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-Route::resources([
-'videos' => VideoController::class,
-]);
-Route::get('/captions/example.vtt', function () {
-$response = Http::get('http://ffmpegvideojs.test/captions/example.vtt');
 
-return $response->body();
+Route::resources([
+    'videos' => VideoController::class,
+]);
+
+
+Route::post('clearVideos', [VideoController::class, 'clear'])->name('videos.clear');
+
+
+
+Route::get('/captions/example.vtt', function () {
+    $response = Http::get('http://ffmpegvideojs.test/captions/example.vtt');
+
+    return $response->body();
 });

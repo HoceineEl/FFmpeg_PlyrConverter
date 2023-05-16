@@ -8,6 +8,7 @@ use App\Jobs\GenerateResolutionsJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 
 class VideoController extends Controller
 {
@@ -44,8 +45,15 @@ class VideoController extends Controller
             $video = Video::create(['title' => $request->input('title')]);
             $filename = date('Ymd_His') . '_' . $videoFile->getClientOriginalName();
             $storagePath = storage_path('app/public/videos');
-            $this->moveVideoFile($videoFile, $storagePath, $filename, $video->id);
+            $fullPath = $this->moveVideoFile($videoFile, $storagePath, $filename, $video->id);
+
+            //wait until the file uploaded successfully
+            while (!file_exists($fullPath)); {
+                usleep(1000);
+            }
+            // Push the job to the queue after the file is moved
             Queue::push(new GenerateResolutionsJob($video->id, $storagePath, $filename));
+
             return redirect()->route('videos.create')->with('success', 'Video upload initiated successfully.');
         }
 
@@ -54,18 +62,20 @@ class VideoController extends Controller
     }
 
 
+
     /**
      * Move the video file to storage and save a resolution.
      */
     private function moveVideoFile($videoFile, $storagePath, $filename, $videoId)
     {
-        $videoFile->move($storagePath, $filename);
+        $path = $videoFile->move($storagePath, $filename);
 
         $resolution = new Resolution();
         $resolution->video_id = $videoId;
         $resolution->resolution = '1080';
         $resolution->path = $filename;
         $resolution->save();
+        return $path->getRealPath();
     }
 
     /**
@@ -139,7 +149,24 @@ class VideoController extends Controller
 
         // Delete the video from the database
         $video->delete();
-
         return redirect()->route('videos.index')->with('success', 'Video and related files deleted successfully.');
+    }
+
+    public function clear()
+    {
+        $videos = Video::all();
+        foreach ($videos as $video) {
+            $resolutions = Resolution::where('video_id', $video->id)->get();
+            foreach ($resolutions as $resolution) {
+                $storagePath = storage_path('app/public/videos');
+                $filePath = $storagePath . '/' . $resolution->path;
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+            $videoDeleted = Video::find($video->id);
+            $videoDeleted->delete();
+        }
+        return back();
     }
 }

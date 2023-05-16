@@ -6,17 +6,16 @@
             <div class="col-md-4">
                 <div class="card mb-4 ">
                     <div class="card-body">
-                        @if ($video->path)
+                        @if ($video->resolutions()->first() && $video->resolutions->where('resolution', '720')->first())
                             <a href="{{ route('videos.show', $video->id) }}">
-
-                                <div class="ratio  ratio-16x9">
+                                <div class="ratio ratio-16x9">
                                     <video id="video-{{ $video->id }}" class="ratio-content rounded-3" muted loop>
                                         <source
-                                            src="{{ asset('storage/videos/' . $video->resolutions->where('resolution', '360')->first()->path) }}"
-                                            type="video/mp4">
+                                            src="{{ asset('storage/videos/' . $video->resolutions->where('resolution', '720')->first()->path) }}"
+                                            type="video/webm">
+                                        Your browser does not support the video tag.
                                     </video>
                                 </div>
-
                             </a>
                         @else
                             <h1>
