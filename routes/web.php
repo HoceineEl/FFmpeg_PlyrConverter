@@ -16,13 +16,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::resources([
-    'videos' => VideoController::class,
-]);
+// Route::get('/', [VideoController::class, 'show']);
+
 
 
 Route::post('clearVideos', [VideoController::class, 'clear'])->name('videos.clear');
 
+
+Route::resource('videos', VideoController::class);
 
 
 Route::get('/captions/example.vtt', function () {

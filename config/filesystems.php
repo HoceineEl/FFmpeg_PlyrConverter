@@ -34,11 +34,12 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
-            'throw' => false,
+            'visibility' => 'public',
         ],
         'ffmpeg' => [
             'driver' => 'local',
-            'root' => storage_path('app/videos'), // Path to store temporary files for FFMpeg
+            'root' => public_path('storage/videos'), // Path to store temporary files for FFMpeg
+            'visibility' => 'public',
         ],
 
         'public' => [

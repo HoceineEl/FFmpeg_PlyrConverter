@@ -75,14 +75,13 @@
                         <a class="nav-link" href="#">Contact</a>
                     </li>
 
-                    <li class="nav-item">
+                    <li class="nav-item me-3">
                         <form action="{{ route('videos.clear') }}" method="post">
                             @csrf
                             <button type="submit" class="nav-link btn btn-danger text-light">Clear All</button>
                         </form>
-
                     </li>
-                    <li class="nav-item ">
+                    <li class="nav-item me-3">
                         <a href="{{ route('videos.create') }}" class="btn btn-success nav-link text-light ">Upload
                             new</a>
                     </li>

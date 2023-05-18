@@ -13,8 +13,4 @@ class Video extends Model
         'title',
         'path',
     ];
-    public function resolutions()
-    {
-        return $this->hasMany(Resolution::class);
-    }
 }

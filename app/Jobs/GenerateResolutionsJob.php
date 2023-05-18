@@ -11,15 +11,19 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use FFMpeg\Coordinate\Dimension;
+use FFMpeg\Format\Video\X264;
 use Illuminate\Support\Facades\Storage;
+use ProtoneMedia\LaravelFFMpeg\Exporters\HLSVideoFilters;
+use ProtoneMedia\LaravelFFMpeg\Exporters\Concatenate;
+
 
 class GenerateResolutionsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $videoId;
-    protected $storagePath;
+    protected $title;
     protected $filename;
+    protected $storagePath;
 
     /**
      * Create a new job instance.
@@ -29,10 +33,10 @@ class GenerateResolutionsJob implements ShouldQueue
      * @param string $filename
      * @return void
      */
-    public function __construct(int $videoId, string $storagePath, string $filename)
+    public function __construct(string $storagePath, string $filename, string $title)
     {
-        $this->videoId = $videoId;
         $this->storagePath = $storagePath;
+        $this->title = $title;
         $this->filename = $filename;
     }
 
@@ -43,34 +47,34 @@ class GenerateResolutionsJob implements ShouldQueue
      */
     public function handle()
     {
-        $resolutions = ['426x240', '640x360', '854x480', '1280x720'];
-        $ffmpegPath = 'C:\ffmpeg\bin\ffmpeg'; // Path to the ffmpeg command-line tool
-
-        // Convert original video to WebM format
-
-        // Change resolution based on the converted WebM video
+        $newFilename = str_replace('.mp4', '', $this->filename);
+        $resolutions = ['1500'];
+        // Iterate over the resolutions and add them as formats
         foreach ($resolutions as $resolution) {
-            $quality = explode('x', $resolution)[1];
-            $outputFilename = $quality . '_' . $this->filename;
+            $format = (new X264('aac'))->setKiloBitrate($resolution);
+            FFMpeg::fromDisk('ffmpeg')
+                ->open($this->filename)
+                ->exportForHLS()
+                ->setSegmentLength(2)
+                ->addFormat($format)
+                ->onProgress(function ($progress) {
+                    echo "Progress: {$progress}%\n";
+                })
+                ->toDisk('public')
+                ->save('videos/' . $newFilename  . '.m3u8');
 
-            $outputPath = $this->storagePath . '/' . $outputFilename;
 
-            try {
-                $command = $ffmpegPath . ' -i ' . $this->storagePath . '/' . $this->filename . ' -s ' . $resolution . ' ' . $outputPath;
-                shell_exec($command);
-                $this->saveResolution($quality, $outputFilename);
-            } catch (\Exception $e) {
-                $errorMessage = 'Error generating resolution: ' . $resolution . 'p. ' . $e->getMessage();
-                throw new \Exception($errorMessage);
-            }
+            $this->saveResolution($resolution, $newFilename . '_0_' . $resolution . '.m3u8');
         }
+        // Delete the original video file and the old resolution from the database
+        unlink($this->storagePath . '/' . $this->filename);
+        // Resolution::where('resolution', '1080')->delete();
     }
 
-    private function saveResolution($quality, $outputFilename)
+    private function saveResolution($outputFilename)
     {
-        $resolutionModel = new Resolution();
-        $resolutionModel->video_id = $this->videoId;
-        $resolutionModel->resolution = $quality;
+        $resolutionModel = new Video();
+        $resolutionModel->title = $this->title;
         $resolutionModel->path = $outputFilename;
         $resolutionModel->save();
     }
