@@ -156,6 +156,7 @@ class VideoController extends Controller
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
+            $video->delete();
         }
 
         return back();

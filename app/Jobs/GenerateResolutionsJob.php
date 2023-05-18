@@ -15,7 +15,7 @@ use FFMpeg\Format\Video\X264;
 use Illuminate\Support\Facades\Storage;
 use ProtoneMedia\LaravelFFMpeg\Exporters\HLSVideoFilters;
 use ProtoneMedia\LaravelFFMpeg\Exporters\Concatenate;
-
+use ProtoneMedia\LaravelFFMpeg\Filters\WatermarkFactory;
 
 class GenerateResolutionsJob implements ShouldQueue
 {
@@ -35,10 +35,11 @@ class GenerateResolutionsJob implements ShouldQueue
      */
     public function __construct(string $storagePath, string $filename, string $title)
     {
+        $this->filename = $filename;
         $this->storagePath = $storagePath;
         $this->title = $title;
-        $this->filename = $filename;
     }
+
 
     /**
      * Execute the job.
@@ -49,6 +50,7 @@ class GenerateResolutionsJob implements ShouldQueue
     {
         $newFilename = str_replace('.mp4', '', $this->filename);
         $resolutions = ['1500'];
+
         // Iterate over the resolutions and add them as formats
         foreach ($resolutions as $resolution) {
             $format = (new X264('aac'))->setKiloBitrate($resolution);
@@ -64,11 +66,10 @@ class GenerateResolutionsJob implements ShouldQueue
                 ->save('videos/' . $newFilename  . '.m3u8');
 
 
-            $this->saveResolution($resolution, $newFilename . '_0_' . $resolution . '.m3u8');
+            $this->saveResolution($newFilename . '_0_' . $resolution . '.m3u8');
         }
         // Delete the original video file and the old resolution from the database
         unlink($this->storagePath . '/' . $this->filename);
-        // Resolution::where('resolution', '1080')->delete();
     }
 
     private function saveResolution($outputFilename)
