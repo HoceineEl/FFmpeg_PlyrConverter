@@ -20,7 +20,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const source =
-                '{{ asset('storage/videos/' . $video->path) }}';
+                "{{ asset('storage/videos/' . str_replace('_0_1500.m3u8', '', $video->path) . '/' . $video->path) }}"
             const video = document.querySelector('video');
 
             const defaultOptions = {};

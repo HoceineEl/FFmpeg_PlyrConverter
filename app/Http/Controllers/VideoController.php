@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use Symfony\Component\Filesystem\Filesystem;
 
 class VideoController extends Controller
 {
@@ -48,10 +49,16 @@ class VideoController extends Controller
             $filename = str_replace(' ', '_', $filename);
             $storagePath = storage_path('app/public/videos');
             $fullPath = $this->moveVideoFile($videoFile, $storagePath, $filename);
+            // Update Redis with initial progress and task
+
+
             //wait until the file uploaded successfully
-            while (!file_exists($fullPath)); {
+            while (!file_exists($fullPath)) {
                 usleep(1000);
             }
+
+            // Update Redis with progress and task after file upload
+
             Queue::push(new GenerateResolutionsJob($storagePath, $filename, $request['title']));
 
             return redirect()->route('videos.create')->with('success', 'Video upload initiated successfully.');
@@ -68,8 +75,11 @@ class VideoController extends Controller
      */
     private function moveVideoFile($videoFile, $storagePath, $filename)
     {
+        Redis::set('video_conversion_progress', 0);
+        Redis::set('current_task', 'Uploading');
         $path = $videoFile->move($storagePath, $filename);
-
+        Redis::set('video_conversion_progress', 98);
+        Redis::set('current_task', 'Uploading');
         return $path->getRealPath();
     }
 
@@ -152,13 +162,24 @@ class VideoController extends Controller
         $videos = Video::all();
         foreach ($videos as $video) {
             $storagePath = storage_path('app/public/videos');
-            $filePath = $storagePath . '/' . $video->path;
-            if (file_exists($filePath)) {
-                unlink($filePath);
+            $floderPath = $storagePath . '/' . str_replace('_0_1500.m3u8', '', $video->path);
+            if (file_exists($floderPath)) {
+                $filesystem = new Filesystem();
+                $filesystem->remove($floderPath);
             }
             $video->delete();
         }
 
         return back();
+    }
+    public function getVideoConversionProgress()
+    {
+        $progress = Redis::get('video_conversion_progress');
+        $currentTask = Redis::get('current_task');
+
+        return response()->json([
+            'progress' => $progress,
+            'current_task' => $currentTask
+        ]);
     }
 }

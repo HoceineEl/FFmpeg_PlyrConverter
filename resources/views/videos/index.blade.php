@@ -10,7 +10,9 @@
                             <a href="{{ route('videos.show', $video->id) }}">
                                 <div class="ratio ratio-16x9">
                                     <video id="video-{{ $video->id }}" autoplay muted loop preload="auto">
-                                        <source src="{{ asset('storage/videos/' . $video->path) }}#t=0,10" type="video/mp4">
+                                        <source
+                                            src="{{ asset('storage/videos/' . str_replace('_0_1500.m3u8', '', $video->path) . '/demo.mp4') }}"
+                                            type="video/mp4">
                                     </video>
                                 </div>
                             </a>
@@ -32,23 +34,5 @@
         @endforeach
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var videos = document.querySelectorAll('video');
 
-            videos.forEach(function(video) {
-                var videoId = video.id.split('-')[1];
-                var videoSrc = video.querySelector('source').src;
-
-                if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = videoSrc;
-                } else if (Hls.isSupported()) {
-                    var hls = new Hls();
-                    hls.loadSource(videoSrc);
-                    hls.attachMedia(video);
-                }
-            });
-        });
-    </script>
 @endsection

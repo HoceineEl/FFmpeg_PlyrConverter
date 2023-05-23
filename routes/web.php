@@ -31,3 +31,5 @@ Route::get('/captions/example.vtt', function () {
 
     return $response->body();
 });
+Route::get('/video-conversion-progress', [VideoController::class, 'getVideoConversionProgress'])
+    ->name('video-conversion-progress');
